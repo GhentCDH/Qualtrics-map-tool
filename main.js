@@ -2,6 +2,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import L from "leaflet";
 import "leaflet-draw";
+import * as turf from "@turf/turf";
 
 // import wkt
 import * as Wkt from 'wicket';
@@ -88,6 +89,7 @@ const mapRender = (
 
     const layerGeoJSON = editableLayers.toGeoJSON();
     const wkt = featuresToWkt(layerGeoJSON.features);
+    compareWithRegions(layerGeoJSON.features);
     setWktToTarget(wktTargetId, wkt);
   });
 
@@ -104,6 +106,61 @@ const mapRender = (
     const wkt = featuresToWkt(layerGeoJSON.features);
     setWktToTarget(wktTargetId, wkt);
   });
+
+
+  // Function to compare drawn polygon with regions in regions in regions.js
+  const compareWithRegions = (features) => {
+    let $i = 1;
+    for (const feature of features) {
+      let drawPoygon = turf.polygon(feature.geometry.coordinates);
+      let matchingRegions = [];
+      for(const region of regions) {
+        let regionMultiPolygon = turf.multiPolygon(region.geometry.coordinates);
+        let intersection = turf.intersect(turf.featureCollection([drawPoygon, regionMultiPolygon]));
+        if (intersection) {
+          let overlapPctdrawPolygon = (turf.area(intersection) / turf.area(turf.polygon(feature.geometry.coordinates))) * 100;
+          let overlapPctRegion = (turf.area(intersection) / turf.area(regionMultiPolygon)) * 100;
+          console.log("Your drawing number", $i ,"is for", overlapPctdrawPolygon,'% drawn within', region.properties.Name,'.', overlapPctRegion,'% of' , region.properties.Name, 'is covered by this drawing.');
+          if(overlapPctdrawPolygon > 15 || overlapPctRegion > 40){
+            console.log("IT'S A MATCH!");
+            matchingRegions.push(region.properties.ISO3166);
+          } else {
+            console.log("No match :-(");
+          }
+        }
+      }
+      let result = ''
+      switch(matchingRegions.length){
+        case 0:
+          break;
+        case 1:
+          switch(matchingRegions[0]){
+            case "BE":
+              result = 'België'
+              break;
+            case "NL":
+              result = 'Nederland';
+              break;
+            case "CW":
+              result = 'Curaçao';
+              break;
+            case "SX":
+              result = 'Sint Maarten';
+              break;
+            case "SR":
+              result = 'Suriname';
+              break;
+            case "AW":
+              result = 'Aruba';
+              break;
+          }   
+        case > 1:
+          break;         
+      }
+      $i++;
+    }
+  };
+
 
 };
 
