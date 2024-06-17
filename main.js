@@ -132,6 +132,7 @@ const mapRender = (
       let result = ''
       switch(matchingRegions.length){
         case 0:
+          result = 'Geen regio gevonden'
           break;
         case 1:
           switch(matchingRegions[0]){
@@ -154,14 +155,32 @@ const mapRender = (
               result = 'Aruba';
               break;
           }   
-        case > 1:
-          break;         
+        case 2:
+          if(matchingRegions.includes("BE") && matchingRegions.includes("NL")){
+            result = 'Europa';
+            break;
+          } else if(matchingRegions.includes("AW") && matchingRegions.includes("CW")){
+            result = 'Caribisch gebied';
+            break;
+          }
+        case 3:
+          if(matchingRegions.includes("AW") && matchingRegions.includes("CW") && matchingRegions.includes("SX")){
+            result = 'ABC-eilanden';
+            break;
+          }
+        default:
+          if(matchingRegions.includes("SR") && matchingRegions.every(c => ["AW", "CW", "SX", "SR"].includes(c)) ){
+            result = 'Midden- en Zuid-Amerika';
+            break;
+          } else {
+            result = 'Ongeldige selectie'
+            break;
+          }        
       }
       $i++;
-    }
+      console.log(result);
+    }   
   };
-
-
 };
 
 window.mapRender = mapRender;
