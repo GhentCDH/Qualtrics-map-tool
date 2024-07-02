@@ -41,7 +41,7 @@ const mapRender = (
   map.addLayer(editableLayers);
 
   // Init Drawing Controls
-  var drawControl = new L.Control.Draw({
+  var drawControlFull = new L.Control.Draw({
     position: "topleft",
     draw: {
       marker: false,
@@ -62,7 +62,18 @@ const mapRender = (
       remove: true,
     },
   });
-  map.addControl(drawControl);
+
+  var drawControlEditOnly = new L.Control.Draw({
+    position: "topleft",
+    draw: false,
+    edit: {
+      featureGroup: editableLayers, //REQUIRED!!
+      remove: true,
+    },
+  });
+
+
+  map.addControl(drawControlFull);
 
   // convert features to wkt
   const featuresToWkt = (features) => {
@@ -89,14 +100,17 @@ const mapRender = (
 
     const layerGeoJSON = editableLayers.toGeoJSON();
     const wkt = featuresToWkt(layerGeoJSON.features);
+    map.removeControl(drawControlFull);
+    map.addControl(drawControlEditOnly);
     compareWithRegions(layerGeoJSON.features);
     setWktToTarget(wktTargetId, wkt);
   });
 
   // Draw Edited Event
   map.on(L.Draw.Event.EDITED, function () {
-    const layerGeoJSON = editableLayers.toGeoJSON()
+    const layerGeoJSON = editableLayers.toGeoJSON();
     const wkt = featuresToWkt(layerGeoJSON.features);
+    compareWithRegions(layerGeoJSON.features);
     setWktToTarget(wktTargetId, wkt);
   });
 
@@ -104,6 +118,9 @@ const mapRender = (
   map.on(L.Draw.Event.DELETED, function () {
     const layerGeoJSON = editableLayers.toGeoJSON();
     const wkt = featuresToWkt(layerGeoJSON.features);
+    map.removeControl(drawControlEditOnly);
+    map.addControl(drawControlFull);
+    compareWithRegions(layerGeoJSON.features);
     setWktToTarget(wktTargetId, wkt);
   });
 
@@ -120,13 +137,11 @@ const mapRender = (
         if (intersection) {
           let overlapPctdrawPolygon = (turf.area(intersection) / turf.area(turf.polygon(feature.geometry.coordinates))) * 100;
           let overlapPctRegion = (turf.area(intersection) / turf.area(regionMultiPolygon)) * 100;
-          console.log("Your drawing number", $i ,"is for", overlapPctdrawPolygon,'% drawn within', region.properties.Name,'.', overlapPctRegion,'% of' , region.properties.Name, 'is covered by this drawing.');
+          //console.log("Your drawing number", $i ,"is for", overlapPctdrawPolygon,'% drawn within', region.properties.Name,'.', overlapPctRegion,'% of' , region.properties.Name, 'is covered by this drawing.');
           if(overlapPctdrawPolygon > 15 || overlapPctRegion > 40){
-            console.log("IT'S A MATCH!");
+            //console.log("IT'S A MATCH!");
             matchingRegions.push(region.properties.ISO3166);
-          } else {
-            console.log("No match :-(");
-          }
+          } 
         }
       }
       let result = ''
@@ -181,6 +196,49 @@ const mapRender = (
       console.log(result);
     }   
   };
+  
+  
+  
+  const addPreviousDrawings = (wktStrings) => {
+    // onderstaande variabele moet uiteraard verwijderd worden eens de velden kunnen worden ingelezen
+    wktStrings = [
+      'POLYGON((3.719793747490593 51.057, 3.723 51.057, 3.723 51.06, 3.719793747490593 51.06, 3.719793747490593 51.057))',
+      'POLYGON((3.723 51.06, 3.725 51.06, 3.725 51.063, 3.723 51.063, 3.723 51.06))'
+    ];
+    
+    const wktLayerGroup = new L.FeatureGroup();
+    let $polynr = 1;
+    wktStrings.forEach(wktString => {      
+      const wktObject = new Wkt.Wkt();
+      wktObject.read(wktString);
+      const geojsonLayer = L.geoJSON(wktObject.toJson(),{
+        style: {
+          "color": getRandomColor(),
+          "opacity":1,
+        }
+      }).addTo(map);
+
+      var labelMarker = L.marker(geojsonLayer.getBounds().getCenter(), {
+        icon: L.divIcon({
+            className: 'polygon-label',
+            html: $polynr,
+            iconAnchor: [11, 10],
+        }),
+      }).addTo(map);
+      
+      wktLayerGroup.addLayer(geojsonLayer);
+      
+      $polynr ++;
+    });
+    
+    wktLayerGroup.addTo(map);
+  }
+
+  const getRandomColor = () => {
+    return `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+  };
+
+  addPreviousDrawings();
 };
 
 window.mapRender = mapRender;

@@ -44,3 +44,13 @@ textarea {
   min-width: 600px;
   min-height: 100px;
 }
+
+.polygon-label{
+  color: #000;
+  background-color:rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  vertical-align: middle;
+  padding:0 5px 10px;
+  text-align: center;
+  border-radius:50%;
+}
