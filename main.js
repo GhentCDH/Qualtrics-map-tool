@@ -14,13 +14,13 @@ import regions from "./regions.js";
 
 
 const mapRender = (
+    questionId,
     mapTargetId,
-    wktTargetId,
-    regionTargetId,
+    wktTargetLabel,
+    regioTargetLabel,
   ) => {
-  console.log("mapRender started");
-  console.log(regions);
 
+    console.log("mapRender called with:", { questionId, mapTargetId, wktTargetLabel, regioTargetLabel });
   // Render Main Map
   const map = L.map(mapTargetId, {
     center: [51.0574556330301, 3.719793747490593],
@@ -75,60 +75,136 @@ const mapRender = (
 
   map.addControl(drawControlFull);
 
+
+
+
+
+
+  const findColumnIndices = (questionId, wktLabel, regioLabel) => {
+    const q = document.getElementById(questionId);
+    const ths = q.querySelectorAll('thead > tr > th[scope="col"]');
+    let regioIndex = '';
+    let wktIndex = '';
+    let i = 0;
+
+    // Find column indices for "Regio" and "WKT"
+    Array.from(ths).forEach((item) => {
+      switch (item.textContent.toLowerCase().trim()) {
+        case regioLabel:
+          regioIndex = i;
+          break;
+        case wktLabel:
+          wktIndex = i;
+          break;
+      }
+      i++;
+    });
+
+    return { wktIndex, regioIndex };
+  };
+    
+  const { wktIndex, regioIndex } = findColumnIndices(questionId, wktTargetLabel, regioTargetLabel);
+
+  const getMatrixCells = (questionId, colNo = null, rowNo = null) => {
+    const q = document.getElementById(questionId);
+    const entryRows = q.querySelectorAll("tbody > tr");
+    let cells = [];
+    if(rowNo == null){
+      Array.from(entryRows).forEach((item) => {
+        if(colNo == null){
+          cells.push(item.getElementsByTagName("td"));
+        } else {
+          cells.push(item.getElementsByTagName("td")[colNo]);
+        }
+      });
+    } else {
+      if(colNo == null){
+        cells.push(entryRows[rowNo].getElementsByTagName("td"));
+      } else {
+        cells.push(entryRows[rowNo].getElementsByTagName("td")[colNo]);
+      }
+    }
+    return cells;
+  };
+
   // convert features to wkt
-  const featuresToWkt = (features) => {
+  const featuresToWkt = (feature) => {
+
     let wkt = new Wkt.Wkt();
     let result = '';
-    for (const feature of features) {
-        wkt.fromObject(feature.geometry)
-        result += wkt.write() + '\n';
-    }
-    return result;
+  
+    if (feature instanceof Array) {
+      feature.forEach((feat) => {
+        if (feat.geometry) {
+          wkt.fromObject(feat.geometry);
+          result += wkt.write() + '\n';
+        } 
+      });
+    } else if (feature && feature.geometry) {
+      wkt.fromObject(feature.geometry);
+      result += wkt.write() + '\n';
+    } 
+    return result.trim();
   }
 
   // set wkt to target element
-  const setWktToTarget = (targetId, wkt) => {
-    const target = window.document.getElementById(targetId);
-    if (target) {
-      target.value = wkt;
+  const setWktToTarget = (questionId, wktIndex, wkt) => {
+    const potentialTargets = getMatrixCells(questionId, wktIndex);
+    let i = 0;
+    for (i; i < potentialTargets.length; i++) {
+      const cell = potentialTargets[i];
+      let target = cell.getElementsByTagName('input')[0];
+      if (target.value === '') {
+        target.value = wkt;
+        break;
+      }
     }
+    let vrijePlaatsen = true;
+    if(i+1 == potentialTargets.length){
+      vrijePlaatsen = false;
+    }
+    return { i, vrijePlaatsen};
   }
 
   // Draw Created Event
   map.on(L.Draw.Event.CREATED, function (e) {
-    editableLayers.addLayer(e.layer);
-
-    const layerGeoJSON = editableLayers.toGeoJSON();
-    const wkt = featuresToWkt(layerGeoJSON.features);
-    map.removeControl(drawControlFull);
-    map.addControl(drawControlEditOnly);
-    compareWithRegions(layerGeoJSON.features);
-    setWktToTarget(wktTargetId, wkt);
+    const layer = e.layer;
+    editableLayers.addLayer(layer);
+    const layerGeoJSON = layer.toGeoJSON();
+    const wkt = featuresToWkt(layerGeoJSON);
+    compareWithRegions(layerGeoJSON);
+    let toTarget = setWktToTarget(questionId, wktIndex, wkt)
+    layer.number = toTarget.i
+    if(toTarget.vrijePlaatsen == false){
+      map.removeControl(drawControlFull);
+      map.addControl(drawControlEditOnly);
+    }
   });
 
   // Draw Edited Event
   map.on(L.Draw.Event.EDITED, function () {
     const layerGeoJSON = editableLayers.toGeoJSON();
-    const wkt = featuresToWkt(layerGeoJSON.features);
+    //const wkt = featuresToWkt(layerGeoJSON.features);
     compareWithRegions(layerGeoJSON.features);
-    setWktToTarget(wktTargetId, wkt);
+    setWktToTarget(questionId, wktIndex, wkt);
   });
 
   // Draw Deleted Event
   map.on(L.Draw.Event.DELETED, function () {
     const layerGeoJSON = editableLayers.toGeoJSON();
-    const wkt = featuresToWkt(layerGeoJSON.features);
+    //const wkt = featuresToWkt(layerGeoJSON.features);
     map.removeControl(drawControlEditOnly);
     map.addControl(drawControlFull);
     compareWithRegions(layerGeoJSON.features);
-    setWktToTarget(wktTargetId, wkt);
+    setWktToTarget(questionId, wktIndex, wkt);
   });
 
 
   // Function to compare drawn polygon with regions in regions in regions.js
-  const compareWithRegions = (features) => {
-    let $i = 1;
-    for (const feature of features) {
+  const compareWithRegions = (feature) => {
+    
+    
+   
       let drawPoygon = turf.polygon(feature.geometry.coordinates);
       let matchingRegions = [];
       for(const region of regions) {
@@ -137,9 +213,9 @@ const mapRender = (
         if (intersection) {
           let overlapPctdrawPolygon = (turf.area(intersection) / turf.area(turf.polygon(feature.geometry.coordinates))) * 100;
           let overlapPctRegion = (turf.area(intersection) / turf.area(regionMultiPolygon)) * 100;
-          //console.log("Your drawing number", $i ,"is for", overlapPctdrawPolygon,'% drawn within', region.properties.Name,'.', overlapPctRegion,'% of' , region.properties.Name, 'is covered by this drawing.');
+          console.log("Your drawing number", 'AAN TE VULLEN' ,"is for", overlapPctdrawPolygon,'% drawn within', region.properties.Name,'.', overlapPctRegion,'% of' , region.properties.Name, 'is covered by this drawing.');
           if(overlapPctdrawPolygon > 15 || overlapPctRegion > 40){
-            //console.log("IT'S A MATCH!");
+            console.log("IT'S A MATCH!");
             matchingRegions.push(region.properties.ISO3166);
           } 
         }
@@ -192,53 +268,59 @@ const mapRender = (
             break;
           }        
       }
-      $i++;
+    
       console.log(result);
-    }   
+       
   };
   
-  
-  
-  const addPreviousDrawings = (wktStrings) => {
-    // onderstaande variabele moet uiteraard verwijderd worden eens de velden kunnen worden ingelezen
-    wktStrings = [
-      'POLYGON((3.719793747490593 51.057, 3.723 51.057, 3.723 51.06, 3.719793747490593 51.06, 3.719793747490593 51.057))',
-      'POLYGON((3.723 51.06, 3.725 51.06, 3.725 51.063, 3.723 51.063, 3.723 51.06))'
-    ];
-    
-    const wktLayerGroup = new L.FeatureGroup();
-    let $polynr = 1;
-    wktStrings.forEach(wktString => {      
-      const wktObject = new Wkt.Wkt();
-      wktObject.read(wktString);
-      const geojsonLayer = L.geoJSON(wktObject.toJson(),{
-        style: {
-          "color": getRandomColor(),
-          "opacity":1,
-        }
-      }).addTo(map);
 
-      var labelMarker = L.marker(geojsonLayer.getBounds().getCenter(), {
-        icon: L.divIcon({
-            className: 'polygon-label',
-            html: $polynr,
-            iconAnchor: [11, 10],
-        }),
-      }).addTo(map);
-      
-      wktLayerGroup.addLayer(geojsonLayer);
-      
-      $polynr ++;
-    });
-    
+ /* 
+  const addPreviousDrawings = (wktCells) => {
+    const wktLayerGroup = new L.FeatureGroup();
+    wktCells.forEach(function callback(cell, index) {
+      wktString = cell.getElementsByTagName('input')[0].value;
+      if (wktString != '') {
+        const wktObject = new Wkt.Wkt();
+        wktObject.read(wktString);
+        const geojsonLayer = L.geoJSON(wktObject.toJson(),{
+          style: {
+            "color": getRandomColor(),
+            "opacity":1,
+          }
+        }).addTo(map);
+
+        var labelMarker = L.marker(geojsonLayer.getBounds().getCenter(), {
+          icon: L.divIcon({
+              className: 'polygon-label',
+              html: index,
+          }),
+        }).addTo(map);
+        
+        wktLayerGroup.addLayer(geojsonLayer);
+      }   
+    })
     wktLayerGroup.addTo(map);
-  }
+  };
+    
+    
+
 
   const getRandomColor = () => {
     return `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
   };
 
-  addPreviousDrawings();
+  addPreviousDrawings(getMatrixCells(questionId, wktIndex));
+*/
+
+  getMatrixCells(questionId, wktIndex).forEach(cell => {
+    cell.getElementsByTagName('input')[0].disabled = true;
+  });
+
+  getMatrixCells(questionId, regioIndex).forEach(cell => {
+    cell.getElementsByTagName('input')[0].disabled = true;
+  });
+
+
 };
 
 window.mapRender = mapRender;
