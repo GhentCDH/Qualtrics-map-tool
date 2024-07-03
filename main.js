@@ -166,15 +166,19 @@ const mapRender = (
     return { i, vrijePlaatsen};
   }
 
+  const setRegioToTarget = (questionId, regioIndex, rowNumber, regionValue) => {
+    getMatrixCells(questionId, regioIndex, rowNumber)[0].getElementsByTagName('input')[0].value = regionValue;
+  }
+
   // Draw Created Event
   map.on(L.Draw.Event.CREATED, function (e) {
     const layer = e.layer;
     editableLayers.addLayer(layer);
     const layerGeoJSON = layer.toGeoJSON();
     const wkt = featuresToWkt(layerGeoJSON);
-    compareWithRegions(layerGeoJSON);
     let toTarget = setWktToTarget(questionId, wktIndex, wkt)
-    layer.number = toTarget.i
+    compareWithRegions(layerGeoJSON);
+    setRegioToTarget(questionId, regioIndex, toTarget.i, compareWithRegions(layerGeoJSON));
     if(toTarget.vrijePlaatsen == false){
       map.removeControl(drawControlFull);
       map.addControl(drawControlEditOnly);
@@ -217,6 +221,7 @@ const mapRender = (
           if(overlapPctdrawPolygon > 15 || overlapPctRegion > 40){
             console.log("IT'S A MATCH!");
             matchingRegions.push(region.properties.ISO3166);
+            console.log(matchingRegions);
           } 
         }
       }
@@ -226,7 +231,7 @@ const mapRender = (
           result = 'Geen regio gevonden'
           break;
         case 1:
-          switch(matchingRegions[0]){
+          switch(String(matchingRegions[0].trim())){
             case "BE":
               result = 'België'
               break;
@@ -263,13 +268,14 @@ const mapRender = (
           if(matchingRegions.includes("SR") && matchingRegions.every(c => ["AW", "CW", "SX", "SR"].includes(c)) ){
             result = 'Midden- en Zuid-Amerika';
             break;
-          } else {
+          } else if(result == ''){
             result = 'Ongeldige selectie'
             break;
           }        
       }
     
       console.log(result);
+      return result;
        
   };
   
