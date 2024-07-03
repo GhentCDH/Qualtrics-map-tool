@@ -105,23 +105,23 @@ const mapRender = (
     
   const { wktIndex, regioIndex } = findColumnIndices(questionId, wktTargetLabel, regioTargetLabel);
 
-  const getMatrixCells = (questionId, colNo = null, rowNo = null) => {
+  const getMatrixCells = (questionId, colIndex = null, rowIndex = null) => {
     const q = document.getElementById(questionId);
     const entryRows = q.querySelectorAll("tbody > tr");
     let cells = [];
-    if(rowNo == null){
+    if(rowIndex == null){
       Array.from(entryRows).forEach((item) => {
-        if(colNo == null){
+        if(colIndex == null){
           cells.push(item.getElementsByTagName("td"));
         } else {
-          cells.push(item.getElementsByTagName("td")[colNo]);
+          cells.push(item.getElementsByTagName("td")[colIndex]);
         }
       });
     } else {
-      if(colNo == null){
-        cells.push(entryRows[rowNo].getElementsByTagName("td"));
+      if(colIndex == null){
+        cells.push(entryRows[rowIndex].getElementsByTagName("td"));
       } else {
-        cells.push(entryRows[rowNo].getElementsByTagName("td")[colNo]);
+        cells.push(entryRows[rowIndex].getElementsByTagName("td")[colIndex]);
       }
     }
     return cells;
@@ -148,14 +148,12 @@ const mapRender = (
   }
 
   // set wkt to target element
-  const setWktToTarget = (questionId, wktIndex, wkt) => {
+  const getFirstEmptyRow = (questionId, wktIndex) => {
     const potentialTargets = getMatrixCells(questionId, wktIndex);
     let i = 0;
     for (i; i < potentialTargets.length; i++) {
-      const cell = potentialTargets[i];
-      let target = cell.getElementsByTagName('input')[0];
-      if (target.value === '') {
-        target.value = wkt;
+      const cell = potentialTargets[i];  
+      if (cell.getElementsByTagName('input')[0].value === '') {
         break;
       }
     }
@@ -166,8 +164,8 @@ const mapRender = (
     return { i, vrijePlaatsen};
   }
 
-  const setRegioToTarget = (questionId, regioIndex, rowNumber, regionValue) => {
-    getMatrixCells(questionId, regioIndex, rowNumber)[0].getElementsByTagName('input')[0].value = regionValue;
+  const setValueToTarget = (questionId, columnIndex, rowIndex, value) => {
+    getMatrixCells(questionId, columnIndex, rowIndex)[0].getElementsByTagName('input')[0].value = value;
   }
 
   // Draw Created Event
@@ -176,9 +174,12 @@ const mapRender = (
     editableLayers.addLayer(layer);
     const layerGeoJSON = layer.toGeoJSON();
     const wkt = featuresToWkt(layerGeoJSON);
-    let toTarget = setWktToTarget(questionId, wktIndex, wkt)
+    let toTarget = getFirstEmptyRow(questionId, wktIndex);
     compareWithRegions(layerGeoJSON);
-    setRegioToTarget(questionId, regioIndex, toTarget.i, compareWithRegions(layerGeoJSON));
+    layer.rowIndex = toTarget.i;
+    showLabel(layer);
+    setValueToTarget(questionId, wktIndex, layer.rowIndex, wkt);
+    setValueToTarget(questionId, regioIndex, toTarget.i, compareWithRegions(layerGeoJSON));
     if(toTarget.vrijePlaatsen == false){
       map.removeControl(drawControlFull);
       map.addControl(drawControlEditOnly);
@@ -186,29 +187,32 @@ const mapRender = (
   });
 
   // Draw Edited Event
-  map.on(L.Draw.Event.EDITED, function () {
-    const layerGeoJSON = editableLayers.toGeoJSON();
-    //const wkt = featuresToWkt(layerGeoJSON.features);
-    compareWithRegions(layerGeoJSON.features);
-    setWktToTarget(questionId, wktIndex, wkt);
+  map.on(L.Draw.Event.EDITED, function (e) {
+    const editedLayers = e.layers;
+    editedLayers.eachLayer(function (layer) {
+      let layerGeoJSON = layer.toGeoJSON();
+      const wkt = featuresToWkt(layerGeoJSON);
+      compareWithRegions(layerGeoJSON);
+      setValueToTarget(questionId, wktIndex, layer.rowIndex, wkt);
+      setValueToTarget(questionId, regioIndex, layer.rowIndex, compareWithRegions(layerGeoJSON));
+    });
+    
   });
 
   // Draw Deleted Event
   map.on(L.Draw.Event.DELETED, function () {
     const layerGeoJSON = editableLayers.toGeoJSON();
     //const wkt = featuresToWkt(layerGeoJSON.features);
+    //getMatrixCells(questionId, ){}
     map.removeControl(drawControlEditOnly);
     map.addControl(drawControlFull);
     compareWithRegions(layerGeoJSON.features);
-    setWktToTarget(questionId, wktIndex, wkt);
+    setWktToTarget(questionId, wktIndex, null, wkt);
   });
 
 
   // Function to compare drawn polygon with regions in regions in regions.js
   const compareWithRegions = (feature) => {
-    
-    
-   
       let drawPoygon = turf.polygon(feature.geometry.coordinates);
       let matchingRegions = [];
       for(const region of regions) {
@@ -219,9 +223,7 @@ const mapRender = (
           let overlapPctRegion = (turf.area(intersection) / turf.area(regionMultiPolygon)) * 100;
           console.log("Your drawing number", 'AAN TE VULLEN' ,"is for", overlapPctdrawPolygon,'% drawn within', region.properties.Name,'.', overlapPctRegion,'% of' , region.properties.Name, 'is covered by this drawing.');
           if(overlapPctdrawPolygon > 15 || overlapPctRegion > 40){
-            console.log("IT'S A MATCH!");
             matchingRegions.push(region.properties.ISO3166);
-            console.log(matchingRegions);
           } 
         }
       }
@@ -265,7 +267,7 @@ const mapRender = (
             break;
           }
         default:
-          if(matchingRegions.includes("SR") && matchingRegions.every(c => ["AW", "CW", "SX", "SR"].includes(c)) ){
+          if(matchingRegions.includes("SR") && matchingRegions.every(c => ["AW", "CW", "SX"].includes(c)) ){
             result = 'Midden- en Zuid-Amerika';
             break;
           } else if(result == ''){
@@ -274,52 +276,27 @@ const mapRender = (
           }        
       }
     
-      console.log(result);
       return result;
        
   };
   
+  const showLabel = (layer) => {
 
- /* 
-  const addPreviousDrawings = (wktCells) => {
-    const wktLayerGroup = new L.FeatureGroup();
-    wktCells.forEach(function callback(cell, index) {
-      wktString = cell.getElementsByTagName('input')[0].value;
-      if (wktString != '') {
-        const wktObject = new Wkt.Wkt();
-        wktObject.read(wktString);
-        const geojsonLayer = L.geoJSON(wktObject.toJson(),{
-          style: {
-            "color": getRandomColor(),
-            "opacity":1,
-          }
-        }).addTo(map);
+    rowNr = layer.rowIndex + 1;
+    const centroid = layer.getBounds().getCenter();
+    const labelMarker = L.marker(centroid, {
+      icon: L.divIcon({
+        className: 'polygon-label-icon',
+        html: "<div class='polygon-label'> Regio "+rowNr+"</div>", 
+        iconSize: [100, 40], 
+        iconAnchor: [50, 20] 
+      })
+    }).addTo(map);
+  }
 
-        var labelMarker = L.marker(geojsonLayer.getBounds().getCenter(), {
-          icon: L.divIcon({
-              className: 'polygon-label',
-              html: index,
-          }),
-        }).addTo(map);
-        
-        wktLayerGroup.addLayer(geojsonLayer);
-      }   
-    })
-    wktLayerGroup.addTo(map);
-  };
-    
-    
-
-
-  const getRandomColor = () => {
-    return `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
-  };
-
-  addPreviousDrawings(getMatrixCells(questionId, wktIndex));
-*/
 
   getMatrixCells(questionId, wktIndex).forEach(cell => {
-    cell.getElementsByTagName('input')[0].disabled = true;
+    //cell.getElementsByTagName('input')[0].disabled = true;
   });
 
   getMatrixCells(questionId, regioIndex).forEach(cell => {
