@@ -36,6 +36,7 @@ const mapRender = (
     id: "osm.streets",
   }).addTo(map);
 
+
   // Init Editable Layer
   const editableLayers = new L.FeatureGroup();
   map.addLayer(editableLayers);
@@ -110,21 +111,30 @@ const mapRender = (
     const entryRows = q.querySelectorAll("tbody > tr");
     let cells = [];
     if(rowIndex == null){
-      Array.from(entryRows).forEach((item) => {
+      Array.from(entryRows).forEach((row) => {
         if(colIndex == null){
-          cells.push(item.getElementsByTagName("td"));
+          cells.push(...Array.from(row.getElementsByTagName("td")));
         } else {
-          cells.push(item.getElementsByTagName("td")[colIndex]);
+          cells.push(row.getElementsByTagName("td")[colIndex]);
         }
       });
     } else {
       if(colIndex == null){
-        cells.push(entryRows[rowIndex].getElementsByTagName("td"));
+        cells.push(...Array.from(entryRows[rowIndex].getElementsByTagName("td")));
       } else {
         cells.push(entryRows[rowIndex].getElementsByTagName("td")[colIndex]);
       }
     }
     return cells;
+  };
+
+  const getMatrixValues = (questionId, colIndex = null, rowIndex = null) => {
+    let cells = getMatrixCells(questionId, colIndex, rowIndex);
+    let cellValues = [];
+    for (let i = 0; i < cells.length; i++) {
+      cellValues[i] = cells[i].getElementsByTagName('input')[0].value;
+    }
+    return cellValues;
   };
 
   // convert features to wkt
@@ -149,11 +159,10 @@ const mapRender = (
 
   // set wkt to target element
   const getFirstEmptyRow = (questionId, wktIndex) => {
-    const potentialTargets = getMatrixCells(questionId, wktIndex);
+    const potentialTargets = getMatrixValues(questionId, wktIndex);
     let i = 0;
     for (i; i < potentialTargets.length; i++) {
-      const cell = potentialTargets[i];  
-      if (cell.getElementsByTagName('input')[0].value === '') {
+      if (potentialTargets[i] === '') {
         break;
       }
     }
@@ -163,6 +172,8 @@ const mapRender = (
     }
     return { i, vrijePlaatsen};
   }
+
+
 
   const setValueToTarget = (questionId, columnIndex, rowIndex, value) => {
     getMatrixCells(questionId, columnIndex, rowIndex)[0].getElementsByTagName('input')[0].value = value;
@@ -195,21 +206,74 @@ const mapRender = (
       compareWithRegions(layerGeoJSON);
       setValueToTarget(questionId, wktIndex, layer.rowIndex, wkt);
       setValueToTarget(questionId, regioIndex, layer.rowIndex, compareWithRegions(layerGeoJSON));
+      map.removeLayer(layer.labelMarker);
+      showLabel(layer);
     });
     
   });
 
   // Draw Deleted Event
-  map.on(L.Draw.Event.DELETED, function () {
+  map.on(L.Draw.Event.DELETED, function (e) {
     const layerGeoJSON = editableLayers.toGeoJSON();
-    //const wkt = featuresToWkt(layerGeoJSON.features);
-    //getMatrixCells(questionId, ){}
+    const removedLayers = e.layers;
+    console.log("removedLayers", removedLayers);
+    removedRowIndices = [];
+    removedLayers.eachLayer(function (layer) {
+      console.log("removedLayer",layer);
+      removedRowIndices.push(layer.rowIndex);
+      map.removeLayer(layer.labelMarker);
+    });
+    console.log("removedRowIndices", removedRowIndices);
+    updateOnDelete(questionId, removedRowIndices);
     map.removeControl(drawControlEditOnly);
     map.addControl(drawControlFull);
-    compareWithRegions(layerGeoJSON.features);
-    setWktToTarget(questionId, wktIndex, null, wkt);
+
   });
 
+  const updateOnDelete = (questionId, removedLayerIndices) => {
+    let originalIndices = [...Array(getMatrixCells(questionId, wktIndex).length).keys()];
+    let updatetIndices = originalIndices.filter((index) => !removedLayerIndices.includes(index));
+
+    console.log("removedLayerIndices", removedLayerIndices);
+    console.log("originalIndices", originalIndices);
+    console.log("updatetIndices", updatetIndices);
+    // update de rijen die na de verwijderde rijen komen
+    for(let i = 0; i < updatetIndices.length; i++){
+      if(originalIndices[i] == updatetIndices[i]){
+        continue;
+      }
+      let rowValues = getMatrixValues(questionId, null, updatetIndices[i]);
+      rowValues.forEach((value, ci) => {
+        setValueToTarget(questionId, ci, i, value);
+      });
+      updateLayerOnDelete(updatetIndices[i], i);
+    }
+
+    originalIndices.slice(-removedLayerIndices.length).forEach((index) => {
+      let cells = getMatrixCells(questionId, null, index);
+      cells.forEach(cell => {
+        cell.getElementsByTagName('input')[0].value = '';
+      });
+    });
+    
+  }
+
+  const clearRowCells = (questionId, rowIndex) => {
+    let cells = getMatrixCells(questionId, null, rowIndex);
+    cells.forEach(cell => {
+      cell.getElementsByTagName('input')[0].value = '';
+    });
+  };
+
+  const updateLayerOnDelete = (oldRowIndex, newRowIndex) => {
+    map.eachLayer(layer => {
+      if (layer.rowIndex === oldRowIndex) {
+        layer.rowIndex = newRowIndex;
+        map.removeLayer(layer.labelMarker);
+        showLabel(layer);
+      }
+    });
+  }
 
   // Function to compare drawn polygon with regions in regions in regions.js
   const compareWithRegions = (feature) => {
@@ -221,7 +285,7 @@ const mapRender = (
         if (intersection) {
           let overlapPctdrawPolygon = (turf.area(intersection) / turf.area(turf.polygon(feature.geometry.coordinates))) * 100;
           let overlapPctRegion = (turf.area(intersection) / turf.area(regionMultiPolygon)) * 100;
-          console.log("Your drawing number", 'AAN TE VULLEN' ,"is for", overlapPctdrawPolygon,'% drawn within', region.properties.Name,'.', overlapPctRegion,'% of' , region.properties.Name, 'is covered by this drawing.');
+          console.log("Your drawing is for", overlapPctdrawPolygon,'% drawn within', region.properties.Name,'.', overlapPctRegion,'% of' , region.properties.Name, 'is covered by this drawing.');
           if(overlapPctdrawPolygon > 15 || overlapPctRegion > 40){
             matchingRegions.push(region.properties.ISO3166);
           } 
@@ -267,7 +331,7 @@ const mapRender = (
             break;
           }
         default:
-          if(matchingRegions.includes("SR") && matchingRegions.every(c => ["AW", "CW", "SX"].includes(c)) ){
+          if(matchingRegions.includes("SR") && matchingRegions.some(c => ["AW", "CW", "SX"].includes(c)) ){
             result = 'Midden- en Zuid-Amerika';
             break;
           } else if(result == ''){
@@ -292,11 +356,13 @@ const mapRender = (
         iconAnchor: [50, 20] 
       })
     }).addTo(map);
+
+    layer.labelMarker = labelMarker;
   }
 
 
   getMatrixCells(questionId, wktIndex).forEach(cell => {
-    //cell.getElementsByTagName('input')[0].disabled = true;
+    cell.getElementsByTagName('input')[0].disabled = true;
   });
 
   getMatrixCells(questionId, regioIndex).forEach(cell => {
