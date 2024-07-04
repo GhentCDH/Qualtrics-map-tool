@@ -12,15 +12,15 @@ import "./style.css";
 
 import regions from "./regions.js";
 
+const appendMapContainer = (parentElement) => {
+	const questionBody = parentElement.getElementsByClassName('QuestionBody')[0];
+	var newDiv = document.createElement('div');
+  newDiv.id = 'map';
+	newDiv.style.height = '500px';
+  questionBody.appendChild(newDiv);
+}; 
 
-const mapRender = (
-    questionId,
-    mapTargetId,
-    wktTargetLabel,
-    regioTargetLabel,
-  ) => {
-
-    console.log("mapRender called with:", { questionId, mapTargetId, wktTargetLabel, regioTargetLabel });
+const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => {
   // Render Main Map
   const map = L.map(mapTargetId, {
     center: [51.0574556330301, 3.719793747490593],
@@ -75,10 +75,6 @@ const mapRender = (
 
 
   map.addControl(drawControlFull);
-
-
-
-
 
 
   const findColumnIndices = (questionId, wktLabel, regioLabel) => {
@@ -216,14 +212,11 @@ const mapRender = (
   map.on(L.Draw.Event.DELETED, function (e) {
     const layerGeoJSON = editableLayers.toGeoJSON();
     const removedLayers = e.layers;
-    console.log("removedLayers", removedLayers);
     removedRowIndices = [];
     removedLayers.eachLayer(function (layer) {
-      console.log("removedLayer",layer);
       removedRowIndices.push(layer.rowIndex);
       map.removeLayer(layer.labelMarker);
     });
-    console.log("removedRowIndices", removedRowIndices);
     updateOnDelete(questionId, removedRowIndices);
     map.removeControl(drawControlEditOnly);
     map.addControl(drawControlFull);
@@ -234,10 +227,6 @@ const mapRender = (
     let originalIndices = [...Array(getMatrixCells(questionId, wktIndex).length).keys()];
     let updatetIndices = originalIndices.filter((index) => !removedLayerIndices.includes(index));
 
-    console.log("removedLayerIndices", removedLayerIndices);
-    console.log("originalIndices", originalIndices);
-    console.log("updatetIndices", updatetIndices);
-    // update de rijen die na de verwijderde rijen komen
     for(let i = 0; i < updatetIndices.length; i++){
       if(originalIndices[i] == updatetIndices[i]){
         continue;
@@ -372,4 +361,5 @@ const mapRender = (
 
 };
 
+window.appendMapContainer = appendMapContainer;
 window.mapRender = mapRender;
