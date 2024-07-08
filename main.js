@@ -1,8 +1,8 @@
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
-import L from "leaflet";
 import "leaflet-draw";
-import * as turf from "@turf/turf";
+//import * as turf from "@turf/turf";
 
 // import wkt
 import * as Wkt from 'wicket';
@@ -33,6 +33,7 @@ const appendMapContainer = (parentElement) => {
 
 const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => {
   // Render Main Map
+  console.log("test");
   const map = L.map(mapTargetId, {
     center: [51.0574556330301, 3.719793747490593],
     zoom: 14,
@@ -89,8 +90,9 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
 
   const getMatrixCells = (questionId, colIndex = null, rowIndex = null) => {
     const q = document.getElementById(questionId);
-    const entryRows = q.querySelectorAll("tbody > tr");
+    const entryRows = q.querySelectorAll("#mapTableContainer tbody > tr");
     let cells = [];
+
     if(rowIndex == null){
       Array.from(entryRows).forEach((row) => {
         if(colIndex == null){
@@ -144,7 +146,6 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
 
     [wktIndex, regioIndex].forEach((index) => {
       getMatrixCells(questionId, index).forEach(cell => {
-        //cell.getElementsByTagName('input')[0].disabled = true;
         cell.getElementsByTagName('input')[0].type = 'hidden';
         cell.classList.add('adminfield');
         cell.style.display = "none";
@@ -155,24 +156,15 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
   };
     
   const { wktIndex, regioIndex } = adminColumnIndices(questionId, wktTargetLabel, regioTargetLabel);
-
-
+  
   // convert features to wkt
   const featuresToWkt = (feature) => {
 
     let wkt = new Wkt.Wkt();
     let result = '';
-  
-    if (feature instanceof Array) {
-      feature.forEach((feat) => {
-        if (feat.geometry) {
-          wkt.fromObject(feat.geometry);
-          result += wkt.write() + '\n';
-        } 
-      });
-    } else if (feature && feature.geometry) {
+   if (feature && feature.geometry) {
       wkt.fromObject(feature.geometry);
-      result += wkt.write() + '\n';
+      result = wkt.write();
     } 
     return result.trim();
   }
@@ -365,9 +357,26 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
     }).addTo(map);
 
     layer.labelMarker = labelMarker;
-  }
+  } 
 
-  
+  const drawExistingFeatures = (wktValues) => {
+    if(wktValues){
+      for (let i = 0; i < wktValues.length; i++) {
+        if(wktValues[i] !== ''){
+          console.log(wktValues[i]);
+          let wkt = new Wkt.Wkt();
+          wkt = wkt.read(wktValues[i]);
+          let leafletLayer = wkt.toObject();
+          leafletLayer.rowIndex = i;
+          editableLayers.addLayer(leafletLayer);
+          showLabel(leafletLayer);
+        } else {
+          break;
+        }
+      };
+    }
+  };
+  drawExistingFeatures(getMatrixValues(questionId, wktIndex));
 };
 
 window.appendMapContainer = appendMapContainer;
