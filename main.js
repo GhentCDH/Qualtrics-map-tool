@@ -13,12 +13,23 @@ import "./style.css";
 import regions from "./regions.js";
 
 const appendMapContainer = (parentElement) => {
-	const questionBody = parentElement.getElementsByClassName('QuestionBody')[0];
-	var newDiv = document.createElement('div');
+  parentElement.classList.add('mapQuestion');
+  const questionBody = parentElement.querySelector('.QuestionBody');
+  const newDiv = document.createElement('div');
   newDiv.id = 'map';
-	newDiv.style.height = '500px';
+  //newDiv.style.height = '500px';
+  newDiv.classList.add('col-md-9');
   questionBody.appendChild(newDiv);
-}; 
+  //document.getElementById('HeaderContainer').remove();
+  document.getElementById('LogoContainer').remove();
+  document.getElementById('Wrapper').classList.add('mapQuestionGlobalWrapper');
+
+  const tableContainer = document.createElement('div');
+  tableContainer.id = 'mapTableContainer';
+  tableContainer.classList.add('col-md-3', 'mapTableContainer');
+  tableContainer.appendChild(questionBody.getElementsByTagName('table')[0]);
+  questionBody.appendChild(tableContainer);
+};
 
 const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => {
   // Render Main Map
@@ -76,32 +87,6 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
 
   map.addControl(drawControlFull);
 
-
-  const findColumnIndices = (questionId, wktLabel, regioLabel) => {
-    const q = document.getElementById(questionId);
-    const ths = q.querySelectorAll('thead > tr > th[scope="col"]');
-    let regioIndex = '';
-    let wktIndex = '';
-    let i = 0;
-
-    // Find column indices for "Regio" and "WKT"
-    Array.from(ths).forEach((item) => {
-      switch (item.textContent.toLowerCase().trim()) {
-        case regioLabel:
-          regioIndex = i;
-          break;
-        case wktLabel:
-          wktIndex = i;
-          break;
-      }
-      i++;
-    });
-
-    return { wktIndex, regioIndex };
-  };
-    
-  const { wktIndex, regioIndex } = findColumnIndices(questionId, wktTargetLabel, regioTargetLabel);
-
   const getMatrixCells = (questionId, colIndex = null, rowIndex = null) => {
     const q = document.getElementById(questionId);
     const entryRows = q.querySelectorAll("tbody > tr");
@@ -132,6 +117,45 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
     }
     return cellValues;
   };
+
+
+  const adminColumnIndices = (questionId, wktLabel, regioLabel) => {
+    const q = document.getElementById(questionId);
+    const ths = q.querySelectorAll('thead > tr > th[scope="col"]');
+    let regioIndex = '';
+    let wktIndex = '';
+    let i = 0;
+
+    // Find column indices for "Regio" and "WKT"
+    Array.from(ths).forEach((item) => {
+      item.style.visibility = "hidden";
+      item.style.display = "none";
+      item.classList.add('adminfield');
+      switch (item.textContent.toLowerCase().trim()) {
+        case regioLabel:
+          regioIndex = i;
+          break;
+        case wktLabel:
+          wktIndex = i;
+          break;
+      }
+      i++;
+    });
+
+    [wktIndex, regioIndex].forEach((index) => {
+      getMatrixCells(questionId, index).forEach(cell => {
+        //cell.getElementsByTagName('input')[0].disabled = true;
+        cell.getElementsByTagName('input')[0].type = 'hidden';
+        cell.classList.add('adminfield');
+        cell.style.display = "none";
+      });
+    });
+    
+    return { wktIndex, regioIndex };
+  };
+    
+  const { wktIndex, regioIndex } = adminColumnIndices(questionId, wktTargetLabel, regioTargetLabel);
+
 
   // convert features to wkt
   const featuresToWkt = (feature) => {
@@ -168,8 +192,6 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
     }
     return { i, vrijePlaatsen};
   }
-
-
 
   const setValueToTarget = (questionId, columnIndex, rowIndex, value) => {
     getMatrixCells(questionId, columnIndex, rowIndex)[0].getElementsByTagName('input')[0].value = value;
@@ -244,7 +266,6 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
         cell.getElementsByTagName('input')[0].value = '';
       });
     });
-    
   }
 
   const clearRowCells = (questionId, rowIndex) => {
@@ -328,13 +349,10 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
             break;
           }        
       }
-    
       return result;
-       
   };
   
   const showLabel = (layer) => {
-
     rowNr = layer.rowIndex + 1;
     const centroid = layer.getBounds().getCenter();
     const labelMarker = L.marker(centroid, {
@@ -349,16 +367,7 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
     layer.labelMarker = labelMarker;
   }
 
-
-  getMatrixCells(questionId, wktIndex).forEach(cell => {
-    cell.getElementsByTagName('input')[0].disabled = true;
-  });
-
-  getMatrixCells(questionId, regioIndex).forEach(cell => {
-    cell.getElementsByTagName('input')[0].disabled = true;
-  });
-
-
+  
 };
 
 window.appendMapContainer = appendMapContainer;

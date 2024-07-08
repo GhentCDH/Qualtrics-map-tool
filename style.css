@@ -44,6 +44,68 @@ textarea {
   min-width: 600px;
   min-height: 100px;
 }
+#Wrapper.mapQuestionGlobalWrapper #HeaderContainer #Header {
+  padding:0;
+}
+
+#Wrapper.mapQuestionGlobalWrapper{
+  display: flex;
+  align-content: stretch;
+}
+
+.mapQuestionGlobalWrapper .SkinInner{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding-top:0;
+}
+
+#SkinContent{
+  flex:1;
+  margin:20px !important;
+  position:relative;
+  display:flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  flex: 1;
+  width: 100%;
+}
+
+#Questions{
+  flex:1;  
+}
+
+.mapQuestion{
+  max-width: unset !important;
+  height:100%;
+}
+
+.mapQuestion .Inner,
+.mapQuestion .InnerInner,
+.mapQuestion .InnerInner > fieldset{
+  height:100% !important;
+} 
+
+.mapQuestion .QuestionBody.q-matrix{
+  flex:1;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: stretch;
+  height: 100%
+}
+
+
+.mapTableContainer input{
+  width:90% !important;
+  margin-left:5%;
+  margin-right: 5%;
+}
+
+.mapTableContainer th{
+  padding:2px !important;
+}
 
 .polygon-label {
   display: table-cell;
