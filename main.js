@@ -18,7 +18,7 @@ const appendMapContainer = (parentElement) => {
   const newDiv = document.createElement('div');
   newDiv.id = 'map';
   //newDiv.style.height = '500px';
-  newDiv.classList.add('col-md-9');
+  newDiv.classList.add('col-12', 'col-md-9');
   questionBody.appendChild(newDiv);
   //document.getElementById('HeaderContainer').remove();
   document.getElementById('LogoContainer').remove();
@@ -26,17 +26,17 @@ const appendMapContainer = (parentElement) => {
 
   const tableContainer = document.createElement('div');
   tableContainer.id = 'mapTableContainer';
-  tableContainer.classList.add('col-md-3', 'mapTableContainer');
+  tableContainer.classList.add('col-12', 'col-md-3', 'mapTableContainer');
   tableContainer.appendChild(questionBody.getElementsByTagName('table')[0]);
+  //tableContainer.getElementsByTagName('input').forEach((input) => {input.disabled = true});
   questionBody.appendChild(tableContainer);
 };
 
 const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => {
   // Render Main Map
-  console.log("test");
   const map = L.map(mapTargetId, {
-    center: [51.0574556330301, 3.719793747490593],
-    zoom: 14,
+    center: [30, -30],
+    zoom: 4,
     minZoom: 1,
     maxZoom: 18,
     attributionControl: false,
@@ -201,10 +201,12 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
     showLabel(layer);
     setValueToTarget(questionId, wktIndex, layer.rowIndex, wkt);
     setValueToTarget(questionId, regioIndex, toTarget.i, compareWithRegions(layerGeoJSON));
+    //en_disableRows(toTarget.i);
     if(toTarget.vrijePlaatsen == false){
       map.removeControl(drawControlFull);
       map.addControl(drawControlEditOnly);
     }
+    en_disableRows();
   });
 
   // Draw Edited Event
@@ -234,7 +236,7 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
     updateOnDelete(questionId, removedRowIndices);
     map.removeControl(drawControlEditOnly);
     map.addControl(drawControlFull);
-
+    en_disableRows();
   });
 
   const updateOnDelete = (questionId, removedLayerIndices) => {
@@ -260,12 +262,7 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
     });
   }
 
-  const clearRowCells = (questionId, rowIndex) => {
-    let cells = getMatrixCells(questionId, null, rowIndex);
-    cells.forEach(cell => {
-      cell.getElementsByTagName('input')[0].value = '';
-    });
-  };
+ 
 
   const updateLayerOnDelete = (oldRowIndex, newRowIndex) => {
     map.eachLayer(layer => {
@@ -324,12 +321,12 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
             result = 'Europa';
             break;
           } else if(matchingRegions.includes("AW") && matchingRegions.includes("CW")){
-            result = 'Caribisch gebied';
+            result = 'ABC-eilanden';
             break;
           }
         case 3:
           if(matchingRegions.includes("AW") && matchingRegions.includes("CW") && matchingRegions.includes("SX")){
-            result = 'ABC-eilanden';
+            result = 'Caribisch gebied';
             break;
           }
         default:
@@ -352,7 +349,7 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
         className: 'polygon-label-icon',
         html: "<div class='polygon-label'> Regio "+rowNr+"</div>", 
         iconSize: [100, 40], 
-        iconAnchor: [50, 20] 
+        iconAnchor: [35, 18] 
       })
     }).addTo(map);
 
@@ -363,7 +360,6 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
     if(wktValues){
       for (let i = 0; i < wktValues.length; i++) {
         if(wktValues[i] !== ''){
-          console.log(wktValues[i]);
           let wkt = new Wkt.Wkt();
           wkt = wkt.read(wktValues[i]);
           let leafletLayer = wkt.toObject();
@@ -376,8 +372,32 @@ const mapRender = (questionId, mapTargetId,wktTargetLabel,regioTargetLabel,) => 
       };
     }
   };
+  
   drawExistingFeatures(getMatrixValues(questionId, wktIndex));
+
+  const en_disableRows = () => {
+    let trs =  Array.from(document.querySelector('#mapTableContainer tbody').getElementsByTagName('tr'));
+    for(let i = 0; i < trs.length; i++){
+      if(trs[i].getElementsByTagName('input')[wktIndex].value != ''){
+        Array.from(trs[i].getElementsByTagName('input')).forEach((input) => {
+          input.classList.add('drawing-row');;
+          });
+      }
+      if(i !== 0 && trs[i-1].getElementsByTagName('input')[wktIndex].value == ''){
+        Array.from(trs[i].getElementsByTagName('input')).forEach((input) => {
+          input.disabled = true;
+          });
+      } else {
+        Array.from(trs[i].getElementsByTagName('input')).forEach((input) => {
+          input.disabled = false;
+          });
+      }
+    }
+  }
+
+  en_disableRows();
 };
+
 
 window.appendMapContainer = appendMapContainer;
 window.mapRender = mapRender;

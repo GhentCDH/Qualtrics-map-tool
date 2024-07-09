@@ -44,6 +44,11 @@ textarea {
   min-width: 600px;
   min-height: 100px;
 }
+
+legend{
+  margin-bottom:2px;
+}
+
 #Wrapper.mapQuestionGlobalWrapper #HeaderContainer #Header {
   padding:0;
 }
@@ -51,6 +56,7 @@ textarea {
 #Wrapper.mapQuestionGlobalWrapper{
   display: flex;
   align-content: stretch;
+  max-height: 100% !important;
 }
 
 .mapQuestionGlobalWrapper .SkinInner{
@@ -58,26 +64,29 @@ textarea {
   display:flex;
   flex-direction:column;
   padding-top:0;
+  max-height: 100% !important;
 }
 
-#SkinContent{
+.mapQuestionGlobalWrapper #SkinContent{
   flex:1;
-  margin:20px !important;
+  padding:20px 0 !important;
   position:relative;
   display:flex;
   flex-direction: column;
-  position: fixed;
   left: 0;
   top: 0;
   flex: 1;
   width: 100%;
+  max-height:100% !important;
 }
 
-#Questions{
-  flex:1;  
+.mapQuestionGlobalWrapper #Questions{
+  flex:1;
+  max-height: 100% !important;  
 }
 
 .mapQuestion{
+  padding-bottom: unset !important;
   max-width: unset !important;
   height:100%;
 }
@@ -93,19 +102,54 @@ textarea {
   display: flex;
   flex-direction: row-reverse;
   align-items: stretch;
-  height: 100%
+  height: 100%;
+  min-height:300px;
+  padding-bottom:0px !important;
 }
 
+.drawing-row{
+  border-color: rgb(51, 136, 255) !important;
+  background-color: rgba(51, 136, 255, 0.2) !important;
+}
+.mapTableContainer{
+  margin-right:10px;
+  padding-right:10px;
+  padding-bottom:50px;
+  overflow-y: auto !important;
+}
 
 .mapTableContainer input{
-  width:90% !important;
-  margin-left:5%;
-  margin-right: 5%;
+  width:100% !important;
+}
+
+.mapTableContainer tr{
+  display: flex;
+  flex-direction: column ;
+  margin-bottom:15px;
 }
 
 .mapTableContainer th{
-  padding:2px !important;
+  padding-bottom:2px !important;
+  padding-left:10px;
 }
+
+.mapTableContainer td{
+  padding-left:10px;
+}
+
+.mapTableContainer th span{
+  padding:0px !important;
+}
+
+.mapTableContainer .table{
+  margin-bottom: unset !important;
+  padding-left: unset !important;
+}
+
+.mapTableContainer input:disabled {
+  opacity: 0.2 !important
+}
+
 
 .polygon-label {
   display: table-cell;
@@ -115,4 +159,43 @@ textarea {
   vertical-align: middle;
   padding: 5px;
   text-align: center;
+}
+
+#Plug > a{
+  display:none !important;
+}
+
+.mapQuestionGlobalWrapper #Buttons{
+  padding-top:5px !important;
+}
+
+@media only screen and (max-width: 767px) {
+  #Wrapper.mapQuestionGlobalWrapper {
+      height:100vh!important
+  }
+
+  .mapQuestionGlobalWrapper .SkinInner,
+  .mapQuestionGlobalWrapper #SkinContent{
+    padding-top:unset !important;
+  }
+
+  .mapQuestion .Inner,.mapQuestion .InnerInner,.mapQuestion .InnerInner>fieldset {
+      display:flex;
+      flex-direction:column;   
+  }
+  
+  .mapQuestion .QuestionBody.q-matrix {
+      flex-direction: column;
+      width:100%;
+      display:flex;
+      overflow-x: hidden;
+  }
+
+  #map {
+      flex:3;
+  }
+
+  #mapTableContainer {
+      flex:1
+  }
 }
