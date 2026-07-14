@@ -99,27 +99,13 @@ Create a **Matrix / Text entry** question with at least these two columns (exact
 
 - A column whose header matches the `wktLabel` argument (e.g. `wkt`) — stores the WKT geometry
 - A column whose header matches the `regioLabel` argument (e.g. `regio`) — stores the region label
-- (optional) A column 'answer' — text field for the respondents to add information about each drawn polygon
+- (optional) A column `answer` — text field for the respondents to add information about each drawn polygon
 
 The columns 'wkt' and 'regio' are hidden from the respondent automatically at runtime.
 
 ### 3. Add question JavaScript
 
 In the question's **JavaScript** tab:
-
-OPTION 1 - only the hidden columns
-
-```javascript
-Qualtrics.SurveyEngine.addOnload(function(){
-	window.appendMapContainer(this.getQuestionContainer(), this.questionId, 'wkt', 'regio');
-});
-
-Qualtrics.SurveyEngine.addOnReady(function(){
-	window.mapRender(this.questionId, 'map', 'wkt', 'regio');
-	 
-});
-```
-OPTION 2 - extra 'answer' column
 
 ```javascript
 Qualtrics.SurveyEngine.addOnload(function(){
@@ -134,13 +120,12 @@ Qualtrics.SurveyEngine.addOnReady(function(){
 });
 
 
-
 Qualtrics.SurveyEngine.addOnPageSubmit(function(){
-	setRegionMatch(this, 1)
+	setRegionMatch(this, <regio-column-number>)
 });
 ```
 
-Replace `<regio-column-number>` with the 1-based column index of the **Regio** column.
+Replace `<regio-column-number>` with the 1-based column index of the **regio** column.
 
 ## Credits
 
