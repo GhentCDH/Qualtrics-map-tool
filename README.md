@@ -68,8 +68,6 @@ pnpm install
 pnpm run dev
 ```
 
-<<<<<<< HEAD
-=======
 ### Build
 
 ```bash
@@ -114,13 +112,8 @@ In the question's **JavaScript** tab:
 
 Replace `<regio-column-number>` with the 1-based column index of the **Regio** column.
 
->>>>>>> 65d82ad (add readme file)
 ## Credits
 
 Development by [Ghent Centre for Digital Humanities - Ghent University](https://www.ghentcdh.ugent.be/). Funded by the [GhentCDH research projects](https://www.ghentcdh.ugent.be/projects).
 
-<<<<<<< HEAD
 <img src="https://www.ghentcdh.ugent.be/ghentcdh_logo_blue_text_transparent_bg_landscape.svg" alt="Landscape" width="500">
-=======
-<img src="https://www.ghentcdh.ugent.be/ghentcdh_logo_blue_text_transparent_bg_landscape.svg" alt="Landscape" width="500">
->>>>>>> 65d82ad (add readme file)
