@@ -87,27 +87,57 @@ Host these files (e.g. on GitHub Pages) and reference them from your Qualtrics s
 
 ### 1. Load the assets
 
-In **Survey → Look & Feel → Header**, add:
+In **Survey → Look & Feel → General →Header**, add:
 
 ```html
-
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" /><script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script><link href="https://apps.flw.ugent.be/Qualtrics-map-tool/dist/assets/index.css" rel="stylesheet" /><script type="module" crossorigin src="https://apps.flw.ugent.be/Qualtrics-map-tool/dist/assets/index.js"></script>
 ```
 
 ### 2. Configure the matrix question
 
-Create a **Matrix / Constant Sum** question with at least these two columns (exact label text matters):
+Create a **Matrix / Text entry** question with at least these two columns (exact label text matters):
 
 - A column whose header matches the `wktLabel` argument (e.g. `wkt`) — stores the WKT geometry
 - A column whose header matches the `regioLabel` argument (e.g. `regio`) — stores the region label
+- (optional) A column 'answer' — text field for the respondents to add information about each drawn polygon
 
-Both columns are hidden from the respondent automatically at runtime.
+The columns 'wkt' and 'regio' are hidden from the respondent automatically at runtime.
 
 ### 3. Add question JavaScript
 
 In the question's **JavaScript** tab:
 
-```javascript
+OPTION 1 - only the hidden columns
 
+```javascript
+Qualtrics.SurveyEngine.addOnload(function(){
+	window.appendMapContainer(this.getQuestionContainer(), this.questionId, 'wkt', 'regio');
+});
+
+Qualtrics.SurveyEngine.addOnReady(function(){
+	window.mapRender(this.questionId, 'map', 'wkt', 'regio');
+	 
+});
+```
+OPTION 2 - extra 'answer' column
+
+```javascript
+Qualtrics.SurveyEngine.addOnload(function(){
+	window.appendMapContainer(this.getQuestionContainer(), this.questionId, 'wkt', 'regio');
+});
+
+Qualtrics.SurveyEngine.addOnReady(function(){
+	window.mapRender(this.questionId, 'map', 'wkt', 'regio');
+	
+
+	console.log(Qualtrics.SurveyEngine.getEmbeddedData("regionMatch")); 
+});
+
+
+
+Qualtrics.SurveyEngine.addOnPageSubmit(function(){
+	setRegionMatch(this, 1)
+});
 ```
 
 Replace `<regio-column-number>` with the 1-based column index of the **Regio** column.
