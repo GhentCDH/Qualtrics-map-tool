@@ -85,6 +85,8 @@ Host these files (e.g. on GitHub Pages) and reference them from your Qualtrics s
 
 ## Qualtrics integration
 
+We have published our files (JavaScript and CSS) at URLs that begin with `apps.flw.ugent.be/Qualtrics-map-tool`. Of course, you shouldn’t just copy these, because otherwise your own changes won’t be reflected. If you want exactly the same setup, you don’t actually need to do anything regarding the installation (and therefore don’t need to worry about the JavaScript or CSS). In that case, you just need to add the headers and JavaScript to the questions in Qualtrics. You can then link to our server, as long as it remains up and running.
+
 ### 1. Load the assets
 
 In **Survey → Look & Feel → General →Header**, add:
