@@ -6,7 +6,7 @@ An interactive map widget for embedding polygon-drawing functionality into Qualt
 
 - Draw polygons on an OpenStreetMap base layer
 - Geocoder search bar (powered by Esri) to navigate to any place
-- Automatic region detection: drawn polygons are matched against predefined regions (Belgium, Netherlands, Aruba, Curaçao, Sint Maarten, Suriname) and labelled accordingly
+- Automatic region detection: drawn polygons are matched against predefined regions (in this case: Belgium, Netherlands, Aruba, Curaçao, Sint Maarten, Suriname) and labelled accordingly
 - Supports multiple drawings per question (one per matrix row)
 - Persists drawings when navigating back to a previously answered question
 - Hidden WKT and region fields in the Qualtrics matrix are written automatically — no manual data entry required
@@ -81,7 +81,7 @@ Qualtrics-map-tool/dist/assets/main.js
 Qualtrics-map-tool/dist/assets/main.css
 ```
 
-Host these files (e.g. on GitHub Pages) and reference them from your Qualtrics survey's **Look & Feel → Header** or question JavaScript.
+Host these files (e.g. on GitHub Pages) and reference them from your Qualtrics survey's **Look & Feel → Header** or **question JavaScript**.
 
 ## Qualtrics integration
 
